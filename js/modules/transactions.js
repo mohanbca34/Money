@@ -1,6 +1,6 @@
 /* =========================================================
-   MoneyFlow — transactions.js
-   Transactions Ledger Module (Vector Icons)
+   Money — js/modules/transactions.js
+   Transactions Ledger Module (Vector Icons & Quick Add Handlers)
    ========================================================= */
 
 import { TransactionService } from '../services/transaction-service.js';
@@ -14,6 +14,9 @@ let currentSearchQuery = '';
 
 export const TransactionsModule = {
   async render(container) {
+    const target = container || document.getElementById('view-container');
+    if (!target) return;
+
     const allTxns = await TransactionService.getAllTransactions();
 
     const filtered = allTxns.filter(t => {
@@ -28,7 +31,7 @@ export const TransactionsModule = {
       return true;
     });
 
-    container.innerHTML = `
+    target.innerHTML = `
       <!-- Toolbar -->
       <div class="card mb-6">
         <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -91,7 +94,7 @@ export const TransactionsModule = {
       </div>
     `;
 
-    this.attachEvents(container);
+    this.attachEvents(target);
   },
 
   attachEvents(container) {
@@ -144,22 +147,24 @@ export const TransactionsModule = {
     });
   },
 
-  showAddModal(container) {
+  showAddModal(container, defaultType = 'expense') {
+    const target = container || document.getElementById('view-container');
+
     Modal.open({
-      title: 'Add New Transaction',
+      title: defaultType === 'income' ? 'Add New Income' : defaultType === 'transfer' ? 'Add Transfer Record' : 'Add New Expense',
       bodyHTML: `
         <form id="txn-form">
           <div class="form-group">
-            <label class="form-label">Type</label>
-            <select class="form-select" name="type">
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-              <option value="transfer">Transfer</option>
+            <label class="form-label">Transaction Type</label>
+            <select class="form-select" name="type" id="txn-type-select">
+              <option value="expense" ${defaultType === 'expense' ? 'selected' : ''}>Expense</option>
+              <option value="income" ${defaultType === 'income' ? 'selected' : ''}>Income</option>
+              <option value="transfer" ${defaultType === 'transfer' ? 'selected' : ''}>Transfer</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">Amount (₹)</label>
-            <input type="number" class="form-input" name="amount" placeholder="0.00" step="any" required>
+            <input type="number" class="form-input" name="amount" placeholder="0.00" step="any" required autofocus>
           </div>
           <div class="form-group">
             <label class="form-label">Category</label>
@@ -181,7 +186,7 @@ export const TransactionsModule = {
           </div>
           <div class="form-group">
             <label class="form-label">Description</label>
-            <input type="text" class="form-input" name="description" placeholder="e.g. Grocery purchase" required>
+            <input type="text" class="form-input" name="description" placeholder="e.g. DMart grocery / Monthly Salary" required>
           </div>
           <div class="form-group">
             <label class="form-label">Payment Method</label>
@@ -200,7 +205,7 @@ export const TransactionsModule = {
         <button class="btn btn-primary" id="save-txn-submit">Save Transaction</button>
       `,
       onRender: (modalEl) => {
-        modalEl.querySelector('#save-txn-submit').addEventListener('click', async () => {
+        modalEl.querySelector('#save-txn-submit')?.addEventListener('click', async () => {
           const form = modalEl.querySelector('#txn-form');
           if (!form.checkValidity()) { form.reportValidity(); return; }
 
@@ -209,14 +214,22 @@ export const TransactionsModule = {
 
           await TransactionService.addTransaction(data);
           Modal.close();
-          Toast.show('Transaction saved successfully!', 'success');
-          this.render(container);
+          Toast.show(`${data.type === 'income' ? 'Income' : 'Expense'} record saved!`, 'success');
+
+          // Dynamically refresh current view
+          const currentHash = window.location.hash.replace('#', '') || 'dashboard';
+          if (currentHash === 'transactions') {
+            this.render(target);
+          } else if (currentHash === 'dashboard') {
+            import('./dashboard.js').then(m => m.DashboardModule.render(target));
+          }
         });
       }
     });
   },
 
   async showEditModal(container, id) {
+    const target = container || document.getElementById('view-container');
     const list = await TransactionService.getAllTransactions();
     const item = list.find(t => t.id === id);
     if (!item) return;
@@ -256,7 +269,7 @@ export const TransactionsModule = {
         <button class="btn btn-primary" id="update-txn-submit">Update Record</button>
       `,
       onRender: (modalEl) => {
-        modalEl.querySelector('#update-txn-submit').addEventListener('click', async () => {
+        modalEl.querySelector('#update-txn-submit')?.addEventListener('click', async () => {
           const form = modalEl.querySelector('#txn-edit-form');
           const formData = new FormData(form);
           const data = Object.fromEntries(formData.entries());
@@ -264,7 +277,13 @@ export const TransactionsModule = {
           await TransactionService.updateTransaction(id, data);
           Modal.close();
           Toast.show('Transaction updated!', 'success');
-          this.render(container);
+
+          const currentHash = window.location.hash.replace('#', '') || 'dashboard';
+          if (currentHash === 'transactions') {
+            this.render(target);
+          } else if (currentHash === 'dashboard') {
+            import('./dashboard.js').then(m => m.DashboardModule.render(target));
+          }
         });
       }
     });

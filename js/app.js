@@ -1,6 +1,6 @@
 /* =========================================================
    Money — js/app.js
-   Application Main Orchestrator & Security Gatekeeper
+   Application Main Orchestrator, Mobile Navigation & Security Gatekeeper
    ========================================================= */
 
 import { state } from './core/state.js';
@@ -124,41 +124,124 @@ document.addEventListener('DOMContentLoaded', async () => {
       title: 'Quick Add Financial Record',
       bodyHTML: `
         <div class="grid-2 gap-3">
-          <button class="btn btn-primary p-4 flex-col text-center" id="qa-expense">
+          <button class="btn btn-primary p-4 flex-col text-center" id="qa-expense" style="height: 90px; justify-content: center;">
             <span class="mb-1">${getIcon('expense', 26)}</span>
-            <span>Add Expense</span>
+            <span class="fw-bold">Add Expense</span>
           </button>
-          <button class="btn btn-success p-4 flex-col text-center" id="qa-income">
+          <button class="btn btn-success p-4 flex-col text-center" id="qa-income" style="height: 90px; justify-content: center;">
             <span class="mb-1">${getIcon('income', 26)}</span>
-            <span>Add Income</span>
+            <span class="fw-bold">Add Income</span>
           </button>
-          <button class="btn btn-secondary p-4 flex-col text-center" id="qa-chit-pay">
-            <span class="mb-1">${getIcon('chits', 26)}</span>
-            <span>Chit Payment</span>
-          </button>
-          <button class="btn btn-secondary p-4 flex-col text-center" id="qa-bill">
+          <button class="btn btn-secondary p-4 flex-col text-center" id="qa-bill" style="height: 90px; justify-content: center;">
             <span class="mb-1">${getIcon('bills', 26)}</span>
-            <span>Add Bill</span>
+            <span class="fw-bold">Add Utility Bill</span>
+          </button>
+          <button class="btn btn-secondary p-4 flex-col text-center" id="qa-sub" style="height: 90px; justify-content: center;">
+            <span class="mb-1">${getIcon('bills', 26)}</span>
+            <span class="fw-bold">Add Subscription</span>
+          </button>
+          <button class="btn btn-secondary p-4 flex-col text-center" id="qa-chit-pay" style="height: 90px; justify-content: center; grid-column: span 2;">
+            <span class="mb-1">${getIcon('chits', 26)}</span>
+            <span class="fw-bold">Chit Wise Group & Payments</span>
           </button>
         </div>
       `,
       onRender: (modalEl) => {
         modalEl.querySelector('#qa-expense')?.addEventListener('click', () => {
           Modal.close();
-          TransactionsModule.showAddModal(viewContainer);
+          TransactionsModule.showAddModal(viewContainer, 'expense');
         });
         modalEl.querySelector('#qa-income')?.addEventListener('click', () => {
           Modal.close();
-          TransactionsModule.showAddModal(viewContainer);
-        });
-        modalEl.querySelector('#qa-chit-pay')?.addEventListener('click', () => {
-          Modal.close();
-          Router.navigate('#chits');
+          TransactionsModule.showAddModal(viewContainer, 'income');
         });
         modalEl.querySelector('#qa-bill')?.addEventListener('click', () => {
           Modal.close();
           SubscriptionsModule.showAddBillModal(viewContainer);
         });
+        modalEl.querySelector('#qa-sub')?.addEventListener('click', () => {
+          Modal.close();
+          SubscriptionsModule.showAddSubModal(viewContainer);
+        });
+        modalEl.querySelector('#qa-chit-pay')?.addEventListener('click', () => {
+          Modal.close();
+          Router.navigate('#chits');
+        });
+      }
+    });
+  };
+
+  // 4. Mobile "More Menu" Drawer Sheet
+  const openMoreMenuModal = () => {
+    Modal.open({
+      title: 'Money — Platform Applications & Features',
+      bodyHTML: `
+        <div class="flex flex-col gap-3">
+          <p class="text-xs text-muted mb-1">Select any module below to open it instantly on your mobile screen:</p>
+          <div class="grid-2 gap-3">
+            <button class="btn btn-secondary p-3 flex items-center gap-3 text-left w-full" id="more-nav-bills" style="justify-content: flex-start;">
+              <span class="stat-icon-wrapper stat-icon-primary">${getIcon('bills', 20)}</span>
+              <div>
+                <div class="fw-bold text-sm">Bills & Subscriptions</div>
+                <div class="text-xs text-muted">Recharges, OTT renewals</div>
+              </div>
+            </button>
+
+            <button class="btn btn-secondary p-3 flex items-center gap-3 text-left w-full" id="more-nav-budgets" style="justify-content: flex-start;">
+              <span class="stat-icon-wrapper stat-icon-warning">${getIcon('budgets', 20)}</span>
+              <div>
+                <div class="fw-bold text-sm">Budgets & Goals</div>
+                <div class="text-xs text-muted">Category expense limits</div>
+              </div>
+            </button>
+
+            <button class="btn btn-secondary p-3 flex items-center gap-3 text-left w-full" id="more-nav-calculators" style="justify-content: flex-start;">
+              <span class="stat-icon-wrapper stat-icon-success">${getIcon('calculators', 20)}</span>
+              <div>
+                <div class="fw-bold text-sm">Chit Calculators</div>
+                <div class="text-xs text-muted">Auction bidding simulator</div>
+              </div>
+            </button>
+
+            <button class="btn btn-secondary p-3 flex items-center gap-3 text-left w-full" id="more-nav-analytics" style="justify-content: flex-start;">
+              <span class="stat-icon-wrapper stat-icon-info">${getIcon('analytics', 20)}</span>
+              <div>
+                <div class="fw-bold text-sm">Analytics & Trends</div>
+                <div class="text-xs text-muted">Income vs Expense charts</div>
+              </div>
+            </button>
+
+            <button class="btn btn-secondary p-3 flex items-center gap-3 text-left w-full" id="more-nav-reports" style="justify-content: flex-start;">
+              <span class="stat-icon-wrapper stat-icon-primary">${getIcon('reports', 20)}</span>
+              <div>
+                <div class="fw-bold text-sm">Reports & Export</div>
+                <div class="text-xs text-muted">Print, PDF & CSV export</div>
+              </div>
+            </button>
+
+            <button class="btn btn-secondary p-3 flex items-center gap-3 text-left w-full" id="more-nav-backup" style="justify-content: flex-start;">
+              <span class="stat-icon-wrapper stat-icon-success">${getIcon('backup', 20)}</span>
+              <div>
+                <div class="fw-bold text-sm">Backup & Cloud Sync</div>
+                <div class="text-xs text-muted">Firebase Cloud & JSON backup</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      `,
+      onRender: (modalEl) => {
+        const bindNav = (btnId, route) => {
+          modalEl.querySelector(btnId)?.addEventListener('click', () => {
+            Modal.close();
+            Router.navigate(route);
+          });
+        };
+        bindNav('#more-nav-bills', '#subscriptions');
+        bindNav('#more-nav-budgets', '#budgets');
+        bindNav('#more-nav-calculators', '#calculators');
+        bindNav('#more-nav-analytics', '#analytics');
+        bindNav('#more-nav-reports', '#reports');
+        bindNav('#more-nav-backup', '#backup');
       }
     });
   };
@@ -166,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (quickAddBtn) quickAddBtn.addEventListener('click', openQuickAddModal);
   if (mobileFabBtn) mobileFabBtn.addEventListener('click', openQuickAddModal);
 
-  // 4. Global Search Listener
+  // 5. Global Search Listener
   const globalSearchInput = document.getElementById('global-search-input');
   if (globalSearchInput) {
     globalSearchInput.addEventListener('input', debounce((e) => {
@@ -179,15 +262,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 350));
   }
 
-  // 5. Navigation Link Click Listeners
+  // 6. Navigation Link Click Listeners
   document.querySelectorAll('#sidebar-nav .nav-item, #mobile-nav .mobile-nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const view = e.currentTarget.getAttribute('data-view');
-      if (view) Router.navigate(`#${view}`);
+      if (view === 'more') {
+        openMoreMenuModal();
+      } else if (view) {
+        Router.navigate(`#${view}`);
+      }
     });
   });
 
-  // 6. Firebase Authentication & Security Gatekeeper
+  // 7. Firebase Authentication & Security Gatekeeper
   FirebaseAuth.init(async (user) => {
     state.setUser(user);
     if (!user) {
@@ -216,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateSyncBadge('offline');
   });
 
-  // 7. Register Service Worker for PWA
+  // 8. Register Service Worker for PWA
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Note:', err));
   }

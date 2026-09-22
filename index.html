@@ -83,25 +83,31 @@
       <!-- Top Translucent Header -->
       <header class="top-header">
         <div class="header-left">
-          <h1 class="page-title" id="page-title">Dashboard</h1>
+          <h1 class="header-title" id="page-title">Dashboard</h1>
         </div>
         <div class="header-right">
-          <div class="search-input-wrapper">
-            <input type="text" class="form-input text-sm" id="global-search-input" placeholder="Search transactions, chits..." style="padding-left: 36px;">
-            <span class="search-input-icon" data-icon="search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex;"></span>
+          <!-- Global Search Input -->
+          <div class="search-wrapper">
+            <span class="search-icon" data-icon="search"></span>
+            <input type="text" class="search-input" id="global-search-input" placeholder="Search transactions, chits..." aria-label="Search">
           </div>
-          <div class="sync-status-badge" id="sync-status-badge" title="Firebase Sync Status">
+
+          <!-- Network Sync Badge -->
+          <div class="sync-badge" id="sync-status-badge">
             <span class="sync-status-dot" id="sync-status-dot"></span>
-            <span id="sync-status-text">Local</span>
+            <span id="sync-status-text">Synced</span>
           </div>
-          <button class="btn btn-primary btn-sm" id="quick-add-btn">
-            <span data-icon="plus"></span> <span class="hide-mobile">Add</span>
+
+          <!-- Quick Add Button -->
+          <button class="btn btn-primary btn-sm btn-icon-text" id="quick-add-btn">
+            <span data-icon="plus"></span>
+            <span class="hide-mobile">Quick Add</span>
           </button>
         </div>
       </header>
 
-      <!-- View Content Container -->
-      <main class="view-content" id="view-container">
+      <!-- Dynamic View Container -->
+      <main class="view-container" id="view-container">
         <!-- Dynamic Module Views render here -->
       </main>
     </div>
@@ -123,9 +129,9 @@
         <span class="mobile-nav-icon" data-icon="chits"></span>
         <span>ChitWise</span>
       </button>
-      <button class="mobile-nav-btn" data-view="analytics">
-        <span class="mobile-nav-icon" data-icon="analytics"></span>
-        <span>Analytics</span>
+      <button class="mobile-nav-btn" data-view="more" id="mobile-more-btn">
+        <span class="mobile-nav-icon" data-icon="more"></span>
+        <span>More</span>
       </button>
     </nav>
   </div>
