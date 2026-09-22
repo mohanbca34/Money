@@ -1,6 +1,6 @@
 /* =========================================================
-   MoneyFlow — firebase/sync.js
-   Background Firestore Sync Engine & Cloud Recovery
+   Money — js/firebase/sync.js
+   Idempotent Firestore Background Sync, Cloud Recovery & Data Reset
    ========================================================= */
 
 import { db } from './config.js';
@@ -15,32 +15,35 @@ import {
 let isSyncing = false;
 
 export const CloudSync = {
-  // Sync pending local operations to Firestore
+  // Synchronize pending local operations to Firestore (Idempotent per-user isolation)
   async syncPending() {
     if (isSyncing || !navigator.onLine || !db) return;
 
     const user = FirebaseAuth.getUser();
-    if (!user || user.isGuest) return;
+    if (!user) return;
 
     isSyncing = true;
     try {
       const pendingItems = await SyncQueue.getPending();
 
       for (const item of pendingItems) {
+        if (!item.entity || !item.entityId) continue;
         const docRef = doc(db, 'users', user.uid, item.entity, item.entityId);
 
         try {
           if (item.operation === 'delete') {
             await deleteDoc(docRef);
           } else {
-            await setDoc(docRef, item.data, { merge: true });
+            // Strip client-only temporary flags if any
+            const syncPayload = { ...item.data, syncStatus: 'synced' };
+            await setDoc(docRef, syncPayload, { merge: true });
           }
 
-          // Mark record as synced locally
+          // Mark record as synced in local IndexedDB
           await Repository.markSynced(item.entity, item.entityId);
           await SyncQueue.markProcessed(item.id);
         } catch (err) {
-          console.warn(`Sync failed for ${item.entity}/${item.entityId}:`, err);
+          console.warn(`Firestore sync error for ${item.entity}/${item.entityId}:`, err);
           await SyncQueue.markFailed(item.id, err.message);
         }
       }
@@ -49,15 +52,16 @@ export const CloudSync = {
     }
   },
 
-  // Disaster Recovery: Rebuild IndexedDB from Firestore cloud data upon fresh login
+  // Cloud Recovery: Download user's cloud documents from Firestore on login
   async restoreUserDataFromCloud(uid) {
-    if (!db || !uid) return false;
+    if (!db || !uid) return { success: false, count: 0 };
 
     const collectionsToRestore = [
       'transactions', 'categories', 'budgets', 'bills',
-      'subscriptions', 'chits', 'chit_payments', 'chit_auctions'
+      'subscriptions', 'chits', 'chit_payments', 'chit_auctions', 'metadata'
     ];
 
+    let totalRestored = 0;
     try {
       for (const colName of collectionsToRestore) {
         const colRef = collection(db, 'users', uid, colName);
@@ -66,13 +70,47 @@ export const CloudSync = {
         await idbClear(colName);
         for (const docSnap of snapshot.docs) {
           const data = docSnap.data();
-          await idbPut(colName, { ...data, syncStatus: 'synced' });
+          await idbPut(colName, { ...data, id: docSnap.id, syncStatus: 'synced' });
+          totalRestored++;
         }
       }
-      return true;
+      return { success: true, count: totalRestored };
     } catch (err) {
-      console.error('Cloud data restoration failed:', err);
-      return false;
+      console.error('Cloud data recovery failed:', err);
+      return { success: false, count: 0, error: err.message };
     }
+  },
+
+  // Reset Account Data: Permanently clear user's cloud Firestore data & local IndexedDB
+  async resetAccountData(uid) {
+    if (!uid) throw new Error('User authentication context required.');
+
+    const collectionsToClear = [
+      'transactions', 'categories', 'budgets', 'bills',
+      'subscriptions', 'chits', 'chit_payments', 'chit_auctions', 'metadata'
+    ];
+
+    // 1. Delete Firestore cloud documents if online
+    if (db && navigator.onLine) {
+      for (const colName of collectionsToClear) {
+        try {
+          const colRef = collection(db, 'users', uid, colName);
+          const snapshot = await getDocs(colRef);
+          for (const docSnap of snapshot.docs) {
+            await deleteDoc(doc(db, 'users', uid, colName, docSnap.id));
+          }
+        } catch (err) {
+          console.warn(`Firestore collection delete note [${colName}]:`, err);
+        }
+      }
+    }
+
+    // 2. Clear local IndexedDB stores
+    for (const storeName of collectionsToClear) {
+      await idbClear(storeName);
+    }
+    await idbClear('sync_queue');
+
+    return true;
   }
 };

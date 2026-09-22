@@ -1,6 +1,6 @@
 /* =========================================================
-   MoneyFlow — chit-service.js
-   Chit Fund Life-Cycle Management, Calculations & Unified Ledger Integration
+   Money — js/services/chit-service.js
+   Chit Fund Life-Cycle Management, Calculations & Idempotent Ledger Integration
    ========================================================= */
 
 import { Repository } from '../storage/repository.js';
@@ -157,15 +157,17 @@ export const ChitService = {
     return best;
   },
 
-  // --- UNIFIED LEDGER INTEGRATION ---
+  // --- UNIFIED LEDGER INTEGRATION (Duplicate-Safe) ---
   async recordChitPayment(chitId, month, amount, dateStr = null) {
     const chit = await this.getChitById(chitId);
     if (!chit) return null;
 
     const paymentDate = dateStr || new Date().toISOString().slice(0, 10);
+    const deterministicSourceId = `chit_pay_${chitId}_m${month}`;
 
     // 1. Save chit_payment record
     const payRecord = await Repository.save(STORE_PAYMENTS, {
+      id: deterministicSourceId,
       chitId,
       month: parseInt(month),
       amount: parseFloat(amount),
@@ -173,8 +175,12 @@ export const ChitService = {
       status: 'paid'
     });
 
-    // 2. Automatically create linked Expense transaction in Ledger
-    await TransactionService.addTransaction({
+    // 2. Idempotent check for linked transaction
+    const allTxns = await TransactionService.getAllTransactions();
+    const existingTx = allTxns.find(t => t.sourceId === deterministicSourceId);
+
+    const txPayload = {
+      id: existingTx ? existingTx.id : undefined,
       type: 'expense',
       amount: parseFloat(amount),
       category: 'Chit Fund',
@@ -183,8 +189,14 @@ export const ChitService = {
       notes: `Chit payment recorded via ChitWise`,
       paymentMethod: 'Bank Transfer',
       sourceType: 'chit',
-      sourceId: chitId
-    });
+      sourceId: deterministicSourceId
+    };
+
+    if (existingTx) {
+      await TransactionService.updateTransaction(existingTx.id, txPayload);
+    } else {
+      await TransactionService.addTransaction(txPayload);
+    }
 
     return payRecord;
   },
@@ -195,6 +207,7 @@ export const ChitService = {
 
     const payoutDate = dateStr || new Date().toISOString().slice(0, 10);
     const amount = parseFloat(amountReceived);
+    const deterministicSourceId = `chit_payout_${chitId}_m${month}`;
 
     // 1. Update chit state
     await this.updateChit(chitId, {
@@ -203,8 +216,12 @@ export const ChitService = {
       takenAmount: amount
     });
 
-    // 2. Automatically create linked Income transaction in Ledger
-    await TransactionService.addTransaction({
+    // 2. Idempotent check for linked transaction
+    const allTxns = await TransactionService.getAllTransactions();
+    const existingTx = allTxns.find(t => t.sourceId === deterministicSourceId);
+
+    const txPayload = {
+      id: existingTx ? existingTx.id : undefined,
       type: 'income',
       amount: amount,
       category: 'Chit Fund',
@@ -213,8 +230,14 @@ export const ChitService = {
       notes: `Chit payout received via ChitWise`,
       paymentMethod: 'Bank Transfer',
       sourceType: 'chit',
-      sourceId: chitId
-    });
+      sourceId: deterministicSourceId
+    };
+
+    if (existingTx) {
+      await TransactionService.updateTransaction(existingTx.id, txPayload);
+    } else {
+      await TransactionService.addTransaction(txPayload);
+    }
 
     return true;
   }

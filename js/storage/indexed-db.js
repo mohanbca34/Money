@@ -1,10 +1,10 @@
 /* =========================================================
-   MoneyFlow — indexed-db.js
-   IndexedDB Engine (MoneyFlowDB v1)
+   Money — js/storage/indexed-db.js
+   IndexedDB Engine (MoneyFlowDB v2 - High Performance Local Database)
    ========================================================= */
 
 const DB_NAME = 'MoneyFlowDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbInstance = null;
 
@@ -78,6 +78,11 @@ export async function getDB() {
         const store = db.createObjectStore('sync_queue', { keyPath: 'id' });
         store.createIndex('status', 'status', { unique: false });
         store.createIndex('createdAt', 'createdAt', { unique: false });
+      }
+
+      // 10. Metadata
+      if (!db.objectStoreNames.contains('metadata')) {
+        db.createObjectStore('metadata', { keyPath: 'id' });
       }
     };
 
