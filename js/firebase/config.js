@@ -9,7 +9,7 @@ import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.9.0/firebase
 
 // Dedicated Web Configuration for project ID: money-ca939
 const firebaseConfig = {
-  apiKey: "BMkYAmJmnXvnGYqm3Co61y3kX8cju7DFYIC1pnP-2bDn8yCRhwpfEFQClscvH_Fon7_TquM3AUNLaPDMDF0fOSA",
+  apiKey: "AIzaSyAprgnHM6xGCvC4A7Y4SJYM2CLJF-QzVK0",
   authDomain: "money-ca939.firebaseapp.com",
   projectId: "money-ca939",
   storageBucket: "money-ca939.firebasestorage.app",
