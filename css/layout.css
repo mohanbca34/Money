@@ -1,5 +1,5 @@
 /* =========================================================
-   MoneyFlow — layout.css
+   Money — layout.css
    iOS Translucent Header, iPad Sidebar & Native Mobile Tab Bar
    ========================================================= */
 
@@ -151,13 +151,49 @@
   white-space: nowrap;
 }
 
-.search-input-wrapper {
-  width: 220px;
+/* Header Search Bar Component */
+.search-wrapper {
   position: relative;
+  display: flex;
+  align-items: center;
+  width: 220px;
 }
 
-/* Sync Status Badge */
-.sync-status-badge {
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-main);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: var(--ios-blue);
+  background: var(--surface-solid);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* Network Sync Badge */
+.sync-badge, .sync-status-badge {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -181,7 +217,7 @@
 }
 
 /* Viewport Scroll Container */
-.view-content, #view-container {
+.view-content, .view-container, #view-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -267,7 +303,7 @@
   .mobile-bottom-nav, #mobile-nav {
     display: flex;
   }
-  .view-content, #view-container {
+  .view-content, .view-container, #view-container {
     padding: 16px 14px;
     padding-bottom: 96px;
   }
@@ -276,7 +312,7 @@
 @media (max-width: 600px) {
   .top-header, #top-header {
     height: 54px;
-    padding: 0 12px;
+    padding: 0 10px;
   }
   .header-left {
     flex: 1;
@@ -293,17 +329,22 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .search-input-wrapper {
-    display: none !important;
+  .search-wrapper {
+    width: 125px;
   }
-  .sync-status-badge {
+  .search-input {
+    height: 34px;
+    font-size: 11px;
+    padding-left: 28px;
+  }
+  .sync-badge, .sync-status-badge {
     padding: 4px 8px;
     font-size: 11px;
   }
   .hide-mobile {
     display: none !important;
   }
-  .view-content, #view-container {
+  .view-content, .view-container, #view-container {
     padding: 12px 10px;
     padding-bottom: 90px;
   }

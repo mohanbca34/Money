@@ -1,10 +1,11 @@
 /* =========================================================
-   MoneyFlow — modal.js
-   iOS Bottom Sheet Modal & Dynamic Overlay Manager
+   Money — js/components/modal.js
+   iOS Bottom Sheet Modal & Dynamic Overlay Manager (Cancellable Timer Fix)
    ========================================================= */
 
 export const Modal = {
   container: null,
+  closeTimeoutHandle: null,
 
   init() {
     this.container = document.getElementById('modal-container');
@@ -17,6 +18,12 @@ export const Modal = {
 
   open({ title, bodyHTML, footerHTML = '', onRender = null }) {
     if (!this.container) this.init();
+
+    // Cancel any pending close timer to prevent wiping out newly opened modals
+    if (this.closeTimeoutHandle) {
+      clearTimeout(this.closeTimeoutHandle);
+      this.closeTimeoutHandle = null;
+    }
 
     this.container.innerHTML = `
       <div class="modal-card">
@@ -43,7 +50,15 @@ export const Modal = {
     if (this.container) {
       this.container.classList.remove('active');
       this.container.setAttribute('aria-hidden', 'true');
-      setTimeout(() => { this.container.innerHTML = ''; }, 250);
+
+      if (this.closeTimeoutHandle) clearTimeout(this.closeTimeoutHandle);
+
+      this.closeTimeoutHandle = setTimeout(() => {
+        if (!this.container.classList.contains('active')) {
+          this.container.innerHTML = '';
+        }
+        this.closeTimeoutHandle = null;
+      }, 250);
     }
   }
 };
