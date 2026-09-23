@@ -1,28 +1,34 @@
 /* =========================================================
    Money — js/modules/backup.js
-   Settings, Backup & Restore, Auto-Backup & Account Reset Module
+   Settings, PWA Install, Notifications & Data Resilience Module
    ========================================================= */
 
 import { CloudSync } from '../firebase/sync.js';
 import { ReportService } from '../services/report-service.js';
 import { FirebaseAuth } from '../firebase/auth.js';
+import { NotificationService } from '../services/notification-service.js';
+import { PWAInstall } from '../components/pwa-install.js';
 import { Modal } from '../components/modal.js';
 import { Toast } from '../components/toast.js';
 import { getIcon } from '../components/icons.js';
 
 export const BackupModule = {
   async render(container) {
+    const target = container || document.getElementById('view-container');
+    if (!target) return;
+
     const user = FirebaseAuth.getUser();
     const autoBackupEnabled = localStorage.getItem('money_auto_backup_enabled') === 'true';
     const lastBackupTime = localStorage.getItem('money_last_backup_timestamp');
     const formattedLastBackup = lastBackupTime ? new Date(lastBackupTime).toLocaleString() : 'Never';
+    const notifStatus = await NotificationService.getPermissionStatus();
 
-    container.innerHTML = `
+    target.innerHTML = `
       <div class="card mb-6">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h3 class="card-title">Settings & Data Resilience</h3>
-            <p class="text-sm text-muted">Manage cloud synchronization, local backups, automatic backups, and account state.</p>
+            <h3 class="card-title">Settings & App Resilience</h3>
+            <p class="text-sm text-muted">PWA Installation, Push Notifications, Cloud Synchronization & Data Resilience.</p>
           </div>
           ${user ? `
             <div class="flex items-center gap-2">
@@ -30,6 +36,54 @@ export const BackupModule = {
               <button class="btn btn-secondary btn-sm" id="auth-logout-btn">${getIcon('trash', 14)} Sign Out</button>
             </div>
           ` : ''}
+        </div>
+      </div>
+
+      <!-- PWA Installation & Push Notification Settings Grid -->
+      <div class="grid-2 mb-6">
+        <!-- PWA Installation Card -->
+        <div class="card flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <div class="stat-icon-wrapper stat-icon-primary">${getIcon('wallet', 24)}</div>
+            <div>
+              <h4 class="fw-bold">PWA App Installation</h4>
+              <p class="text-xs text-muted">Install Money as a native app on Android, iOS or Desktop.</p>
+            </div>
+          </div>
+          <div class="text-xs flex items-center justify-between p-3 rounded-md border" style="background: var(--surface-alt); border-radius: var(--radius-md);">
+            <span>Status:</span>
+            <span class="badge ${PWAInstall.isInstalled ? 'badge-green' : 'badge-amber'}">
+              ${PWAInstall.isInstalled ? 'Installed App' : 'Browser Mode'}
+            </span>
+          </div>
+          <button class="btn btn-primary btn-sm mt-1" id="trigger-pwa-install-btn">
+            ${getIcon('download', 14)} Install Money App
+          </button>
+        </div>
+
+        <!-- Push Notifications & Reminders Card -->
+        <div class="card flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <div class="stat-icon-wrapper stat-icon-info">${getIcon('bell', 24)}</div>
+            <div>
+              <h4 class="fw-bold">Push Notifications & Reminders</h4>
+              <p class="text-xs text-muted">Receive EMI, Bill & Chit payment alerts on your device.</p>
+            </div>
+          </div>
+          <div class="text-xs flex items-center justify-between p-3 rounded-md border" style="background: var(--surface-alt); border-radius: var(--radius-md);">
+            <span>Permission:</span>
+            <span class="badge ${notifStatus === 'granted' ? 'badge-green' : 'badge-amber'}">
+              ${notifStatus === 'granted' ? 'Notifications Active' : 'Not Enabled'}
+            </span>
+          </div>
+          <div class="flex items-center gap-2 mt-1">
+            <button class="btn btn-primary btn-sm flex-1" id="trigger-enable-notif-btn">
+              ${getIcon('bell', 14)} Enable Alerts
+            </button>
+            <button class="btn btn-secondary btn-sm" id="trigger-add-reminder-btn">
+              ${getIcon('plus', 14)} Custom EMI Alert
+            </button>
+          </div>
         </div>
       </div>
 
@@ -80,7 +134,7 @@ export const BackupModule = {
 
       <!-- Firebase Cloud Sync Card -->
       <div class="card mb-6 flex flex-col gap-4">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-3">
           <div class="flex items-center gap-3">
             <div class="stat-icon-wrapper stat-icon-info">${getIcon('shield', 24)}</div>
             <div>
@@ -96,7 +150,7 @@ export const BackupModule = {
 
       <!-- Danger Zone: Reset Account Data -->
       <div class="card p-5" style="border: 1px solid rgba(255, 59, 48, 0.3); background: rgba(255, 59, 48, 0.03);">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h4 class="fw-bold text-danger flex items-center gap-2" style="color: var(--ios-red);">
               ${getIcon('alert', 18)} Reset Account Data
@@ -110,10 +164,76 @@ export const BackupModule = {
       </div>
     `;
 
-    this.attachEventListeners(container, user);
+    this.attachEventListeners(target, user);
   },
 
   attachEventListeners(container, user) {
+    // PWA Install
+    container.querySelector('#trigger-pwa-install-btn')?.addEventListener('click', () => {
+      PWAInstall.promptInstall();
+    });
+
+    // Enable Notifications
+    container.querySelector('#trigger-enable-notif-btn')?.addEventListener('click', async () => {
+      await NotificationService.requestPermission();
+      this.render(container);
+    });
+
+    // Add Custom EMI / Bill Reminder Modal
+    container.querySelector('#trigger-add-reminder-btn')?.addEventListener('click', () => {
+      Modal.open({
+        title: 'Schedule EMI / Bill Reminder Alert',
+        bodyHTML: `
+          <form id="reminder-form">
+            <div class="form-group">
+              <label class="form-label">Reminder Title</label>
+              <input type="text" class="form-input" name="title" placeholder="e.g. Home Loan EMI / Car Loan EMI" required autofocus>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Type</label>
+              <select class="form-select" name="type">
+                <option value="EMI">EMI Payment</option>
+                <option value="Bill">Utility Bill</option>
+                <option value="Subscription">Subscription Renewal</option>
+                <option value="Chit">ChitWise Auction</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Amount (₹)</label>
+              <input type="number" class="form-input" name="amount" placeholder="15000" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date</label>
+              <input type="date" class="form-input" name="dueDate" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Remind Me</label>
+              <select class="form-select" name="leadDays">
+                <option value="1">1 Day Before</option>
+                <option value="3">3 Days Before</option>
+                <option value="7">7 Days Before</option>
+                <option value="0">On Due Date</option>
+              </select>
+            </div>
+          </form>
+        `,
+        footerHTML: `
+          <button class="btn btn-secondary" onclick="document.getElementById('modal-close-btn').click()">Cancel</button>
+          <button class="btn btn-primary" id="save-reminder-submit">Schedule Alert</button>
+        `,
+        onRender: (modalEl) => {
+          modalEl.querySelector('#save-reminder-submit')?.addEventListener('click', async () => {
+            const form = modalEl.querySelector('#reminder-form');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            const data = Object.fromEntries(new FormData(form).entries());
+            await NotificationService.saveCustomReminder(data);
+            Modal.close();
+          });
+        }
+      });
+    });
+
     // Logout
     container.querySelector('#auth-logout-btn')?.addEventListener('click', async () => {
       await FirebaseAuth.logoutUser();

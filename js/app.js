@@ -11,11 +11,13 @@ import { Modal } from './components/modal.js';
 import { Toast } from './components/toast.js';
 import { AuthModal } from './components/auth-modal.js';
 import { PullToRefresh } from './components/pull-to-refresh.js';
+import { PWAInstall } from './components/pwa-install.js';
 import { getIcon } from './components/icons.js';
 
 import { FirebaseAuth } from './firebase/auth.js';
 import { CloudSync } from './firebase/sync.js';
 import { ReportService } from './services/report-service.js';
+import { NotificationService } from './services/notification-service.js';
 
 import { TransactionsModule } from './modules/transactions.js';
 import { SubscriptionsModule } from './modules/subscriptions.js';
@@ -59,7 +61,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (iconName) el.innerHTML = getIcon(iconName, 18);
   });
 
-  // 2. Initialize Native Mobile Pull-to-Refresh
+  // 2. Initialize PWA Install Detector & Native Mobile Pull-to-Refresh
+  PWAInstall.init();
   PullToRefresh.init();
 
   // 3. Register Client Routes
@@ -287,8 +290,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       AuthModal.closeOverlay();
       updateSyncBadge(navigator.onLine ? 'online' : 'offline');
 
-      // Check auto backup schedule (24h)
+      // Check auto backup schedule (24h) & check scheduled EMI/Bill reminders
       await ReportService.checkAndPerformAutoBackup();
+      await NotificationService.checkAndTriggerScheduledReminders();
 
       // Trigger background sync
       CloudSync.syncPending();
@@ -301,15 +305,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('online', () => {
     updateSyncBadge('online');
     CloudSync.syncPending();
+    Toast.show('Back Online — Money synced to cloud.', 'success');
   });
 
   window.addEventListener('offline', () => {
     updateSyncBadge('offline');
+    Toast.show('Offline Mode — Working with local database.', 'warning');
   });
 
-  // 9. Register Service Worker for PWA
+  // 9. Register Production PWA Service Worker
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Note:', err));
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log('PWA SW Note:', err));
   }
 });
 
