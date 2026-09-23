@@ -1,6 +1,6 @@
 /* =========================================================
    Money — js/services/notification-service.js
-   PWA Push Notification & Scheduled Reminder System
+   PWA Push Notification & Automated EMI/Bill Reminder Engine
    ========================================================= */
 
 import { BillService } from './bill-service.js';
@@ -66,33 +66,23 @@ export const NotificationService = {
     return true;
   },
 
-  // Check Upcoming Due Dates & Trigger Reminders (EMI, Bills, Subscriptions, Chits)
+  // Automated Check for Due Dates & Lead Time Reminders (EMI, Bills, Subscriptions)
   async checkAndTriggerScheduledReminders() {
     const status = await this.getPermissionStatus();
     if (status !== 'granted') return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // 1. Check Bills & Utility Reminders
+    // 1. Check Bills & EMI Loans
     const bills = await BillService.getAllBills();
     for (const b of bills) {
       if (b.status === 'paid') continue;
       const days = BillService.daysLeft(b.dueDate);
+      const leadDays = parseInt(b.leadDays) || 3;
+      const countdown = BillService.getCountdown(b.dueDate);
 
-      if (days === 1) {
-        this.sendNotification(`Bill Reminder — ${b.name}`, {
-          body: `Your bill of ₹${b.amount} (${b.provider}) is due tomorrow!`,
-          url: './#subscriptions'
-        });
-      } else if (days === 3) {
-        this.sendNotification(`Bill Reminder — ${b.name}`, {
-          body: `Your bill of ₹${b.amount} (${b.provider}) is due in 3 days.`,
-          url: './#subscriptions'
-        });
-      } else if (days === 0) {
-        this.sendNotification(`Bill Due Today — ${b.name}`, {
-          body: `Your bill payment of ₹${b.amount} is due TODAY!`,
+      if (days === leadDays || days === 1 || days === 0) {
+        const title = b.type === 'emi' || b.type === 'loan' ? `EMI Reminder — ${b.name}` : `Bill Reminder — ${b.name}`;
+        this.sendNotification(title, {
+          body: `Payment of ₹${b.amount} (${b.provider}) is ${countdown.label}!`,
           url: './#subscriptions'
         });
       }
@@ -102,14 +92,12 @@ export const NotificationService = {
     const subs = await BillService.getAllSubscriptions();
     for (const s of subs) {
       const days = BillService.daysLeft(s.nextBillingDate);
-      if (days === 1) {
+      const leadDays = parseInt(s.leadDays) || 3;
+      const countdown = BillService.getCountdown(s.nextBillingDate);
+
+      if (days === leadDays || days === 1 || days === 0) {
         this.sendNotification(`Subscription Reminder — ${s.name}`, {
-          body: `Your ${s.name} subscription renewal (₹${s.amount}) is due tomorrow.`,
-          url: './#subscriptions'
-        });
-      } else if (days === 0) {
-        this.sendNotification(`Subscription Renewal Today — ${s.name}`, {
-          body: `Your ${s.name} subscription renews today (₹${s.amount}).`,
+          body: `Renewal of ₹${s.amount} is ${countdown.label}!`,
           url: './#subscriptions'
         });
       }
@@ -120,7 +108,7 @@ export const NotificationService = {
     for (const c of chits) {
       if (!c.taken) {
         this.sendNotification(`ChitWise Alert — ${c.name}`, {
-          body: `Month ${c.currentMonth} auction & installment payment active for ${c.name}.`,
+          body: `Month ${c.currentMonth} auction & installment active for ${c.name}.`,
           url: './#chits'
         });
       }
@@ -133,10 +121,10 @@ export const NotificationService = {
     reminders.push({
       id: `rem_${Date.now()}`,
       title: reminder.title,
-      type: reminder.type || 'EMI', // 'EMI' | 'Bill' | 'Subscription' | 'Chit' | 'Custom'
+      type: reminder.type || 'EMI',
       amount: parseFloat(reminder.amount) || 0,
       dueDate: reminder.dueDate,
-      leadDays: parseInt(reminder.leadDays) || 1, // 0 | 1 | 3 | 7
+      leadDays: parseInt(reminder.leadDays) || 3,
       createdAt: new Date().toISOString()
     });
     localStorage.setItem('money_custom_reminders', JSON.stringify(reminders));
