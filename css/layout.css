@@ -1,7 +1,13 @@
 /* =========================================================
    Money — layout.css
-   iOS Translucent Header, iPad Sidebar & Native Mobile Tab Bar
+   iOS Translucent Header, iPad Sidebar, Mobile Nav & Native Pull-to-Refresh
    ========================================================= */
+
+/* Disable native browser overscroll pull-to-refresh on mobile */
+html, body, #app-container, .main-wrapper, .view-container, #view-container {
+  overscroll-behavior-y: none;
+  -webkit-overscroll-behavior-y: none;
+}
 
 #app-container, #app {
   display: flex;
@@ -214,6 +220,59 @@
 }
 .sync-status-dot.offline {
   background: var(--ios-orange);
+}
+
+/* Native Mobile Pull-to-Refresh Component */
+.pull-to-refresh-container {
+  display: none;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 85;
+  pointer-events: none;
+  transition: height 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@media (max-width: 900px) {
+  .pull-to-refresh-container {
+    display: flex;
+  }
+}
+
+.ptr-spinner-box {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--surface-solid);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0.6);
+  opacity: 0;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
+}
+
+.ptr-ring-svg {
+  display: block;
+}
+
+.ptr-ring-stroke {
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.ptr-active-spinner svg {
+  animation: ptrSpin 0.75s linear infinite;
+}
+
+@keyframes ptrSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Viewport Scroll Container */

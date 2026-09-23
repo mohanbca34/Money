@@ -10,6 +10,7 @@ import { Navigation } from './components/navigation.js';
 import { Modal } from './components/modal.js';
 import { Toast } from './components/toast.js';
 import { AuthModal } from './components/auth-modal.js';
+import { PullToRefresh } from './components/pull-to-refresh.js';
 import { getIcon } from './components/icons.js';
 
 import { FirebaseAuth } from './firebase/auth.js';
@@ -58,7 +59,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (iconName) el.innerHTML = getIcon(iconName, 18);
   });
 
-  // 2. Register Client Routes
+  // 2. Initialize Native Mobile Pull-to-Refresh
+  PullToRefresh.init();
+
+  // 3. Register Client Routes
   const viewContainer = document.getElementById('view-container');
 
   Router.register('dashboard', () => {
@@ -115,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Start Router
   Router.init();
 
-  // 3. Quick Add Floating Action Button (+)
+  // 4. Quick Add Floating Action Button (+)
   const quickAddBtn = document.getElementById('quick-add-btn');
   const mobileFabBtn = document.getElementById('mobile-fab-btn');
 
@@ -171,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   };
 
-  // 4. Mobile "More Menu" Drawer Sheet
+  // 5. Mobile "More Menu" Drawer Sheet
   const openMoreMenuModal = () => {
     Modal.open({
       title: 'Money — Platform Applications & Features',
@@ -249,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (quickAddBtn) quickAddBtn.addEventListener('click', openQuickAddModal);
   if (mobileFabBtn) mobileFabBtn.addEventListener('click', openQuickAddModal);
 
-  // 5. Global Search Listener
+  // 6. Global Search Listener
   const globalSearchInput = document.getElementById('global-search-input');
   if (globalSearchInput) {
     globalSearchInput.addEventListener('input', debounce((e) => {
@@ -262,7 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 350));
   }
 
-  // 6. Navigation Link Click Listeners
+  // 7. Navigation Link Click Listeners
   document.querySelectorAll('#sidebar-nav .nav-item, #mobile-nav .mobile-nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const view = e.currentTarget.getAttribute('data-view');
@@ -274,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 7. Firebase Authentication & Security Gatekeeper
+  // 8. Firebase Authentication & Security Gatekeeper
   FirebaseAuth.init(async (user) => {
     state.setUser(user);
     if (!user) {
@@ -303,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateSyncBadge('offline');
   });
 
-  // 8. Register Service Worker for PWA
+  // 9. Register Service Worker for PWA
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Note:', err));
   }
